@@ -13,6 +13,7 @@ Play area =  x_pad+1, y_pad+1, 1582, 897
 
 # Globals
 # ------------------
+# screen coordinate padding
 x_pad = 584
 y_pad = 264
  
