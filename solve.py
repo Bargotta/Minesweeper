@@ -132,7 +132,7 @@ def getCoords():
     x, y = mouse.position
     x = x - Offset.x
     y = y - Offset.y
-    print (x, y)
+    print(x, y)
 
 # -----------------------------------------------
 # Main
@@ -167,21 +167,27 @@ def apply_rules(im, row, col):
     return im
 
 def execute_move():
+    move_made = False
     im = screenshot()
 
     for row in range(height):
         for col in range(width):
             cell = get_cell(im, cell_coords[row][col])
-            if (numbered(cell)):
+            if numbered(cell):
+                prev_im = im
                 im = apply_rules(im, row, col)
+                if prev_im != im:
+                    move_made = True
+
+    return move_made
 
 def main():
     # start the game by clicking the middle cell
     move(cell_coords[int(height / 2)][int(width / 2)]) 
     leftClick(2)
 
-    for i in range(35):
-        execute_move()
+    while (execute_move()):
+        pass
 
 if __name__ == '__main__':
     main()
