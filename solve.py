@@ -155,14 +155,14 @@ def apply_rules(im, row, col):
         for coord in unopened_cells:
             move(coord)
             rightClick(1)
-            im = screenshot()
+        im = screenshot() if len(unopened_cells) > 0 else im
 
     # rule two
     if value(cell) == len(flagged_cells):
         for coord in unopened_cells:
             move(coord)
             leftClick(1)
-            im = screenshot()
+        im = screenshot() if len(unopened_cells) > 0 else im
 
     return im
 
@@ -180,7 +180,7 @@ def main():
     move(cell_coords[int(height / 2)][int(width / 2)]) 
     leftClick(2)
 
-    for i in range(15):
+    for i in range(35):
         execute_move()
 
 if __name__ == '__main__':
