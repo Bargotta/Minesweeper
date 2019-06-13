@@ -3,6 +3,7 @@ from numpy import *
 from PIL import ImageGrab, ImageOps
 import os
 import time
+import random
 
 """
 All coordinates assume a screen resolution of 1440x900, and Chrome 
@@ -36,6 +37,7 @@ class Cell:
     three = (235, 50, 35, 255)
     four = (0, 10, 118, 255)
     bomb = (106, 106, 106, 255)
+    flagged = (0, 0, 0, 255)
 
 # -----------------------------------------------
 # Globals
@@ -44,15 +46,15 @@ class Cell:
 # size of grid for expert mode
 height = 16
 width = 30
+
 cell_positions = [[(0, 0)] * width for i in range(height)]
+for row in range(height):
+    for col in range(width):
+        cell_positions[row][col] = (Offset.cell_x + col * 16, Offset.cell_y + row * 16)
 
 # -----------------------------------------------
 # Helper Functions
 # -----------------------------------------------
-def setCellPositions():
-    for row in range(height):
-        for col in range(width):
-            cell_positions[row][col] = (Offset.cell_x + col * 16, Offset.cell_y + row * 16)
 
 def screenGrab():
     box = (2 * (Offset.x + 1), 2 * (Offset.y + 1), 
@@ -69,7 +71,62 @@ def getPixel(im, coord):
     top_border_coords = (coord[0] - Offset.top_border, coord[1])
     top_pix = im.getpixel(coordPIL(top_border_coords))
 
-    return pix if top_pix != Cell.unopened else top_pix
+    if (pix == Cell.zero and top_pix == Cell.unopened):
+        return top_pix
+    else:
+        return pix
+
+def neighbors(row, col):
+    def is_valid(h, w):
+        return 0 <= h < height and 0 <= w < width
+
+    for diffR, diffC in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
+        neighborR, neighborC = row + diffR, col + diffC
+        if is_valid(neighborR, neighborC):
+            yield neighborR, neighborC
+
+def val(im, cell):
+    pix = getPixel(im, cell)
+    if (pix == Cell.one):
+        return 1
+    elif (pix == Cell.two):
+        return 2
+    elif (pix == Cell.three):
+        return 3
+    elif (pix == Cell.four):
+        return 4
+    else:
+        return 0
+
+def rule_one(im, row, col):
+    ns = [cell_positions[r][c] for r, c in neighbors(row, col)]
+    unopened_or_flagged_count = 0
+    for n in ns:
+        pix = getPixel(im, n)
+        if (pix == Cell.unopened or pix == Cell.flagged):
+            unopened_or_flagged_count += 1
+
+    if val(im, cell_positions[row][col]) == unopened_or_flagged_count:
+        for n in ns:
+            if (getPixel(im, n) == Cell.unopened):
+                move(n)
+                rightClick(1)
+                im = screenGrab()
+                print("RULE 1 EXECUTED...")
+
+    return im
+
+def execute_move():
+    finished = False
+    im = screenGrab()
+
+    for row in range(height):
+        for col in range(width):
+            cell = cell_positions[row][col]
+            pix = getPixel(im, cell)
+            if (pix == Cell.one or pix == Cell.two or
+                pix == Cell.three or pix == Cell.four):
+                im = rule_one(im, row, col)
 
 # -----------------------------------------------
 # Mouse Controls
@@ -79,7 +136,7 @@ mouse = Controller()
 
 def leftClick(n):
     mouse.click(Button.left, n)
-    print("Click!")
+    # print("Click!")
 
 def rightClick(n):
     mouse.click(Button.right, n)
@@ -103,29 +160,40 @@ def getCoords():
 # -----------------------------------------------
 
 def main():
-    setCellPositions()
-    im = screenGrab()
+    # start the game by clicking the middle cell
+    move(cell_positions[int(height / 2)][int(width / 2)]) 
+    leftClick(1)
 
-    for row in range(height):
-        for col in range(width):
-            pos = cell_positions[row][col]
-            if (getPixel(im, pos) == Cell.one):
-                print("1")
-            elif (getPixel(im, pos) == Cell.two):
-                print("2")
-            elif (getPixel(im, pos) == Cell.three):
-                print("3")
-            elif (getPixel(im, pos) == Cell.four):
-                print("4")
-            elif (getPixel(im, pos) == Cell.zero):
-                print("0")
-            elif (getPixel(im, pos) == Cell.bomb):
-                print("bomb")
-            elif (getPixel(im, pos) == Cell.unopened):
-                print("unopened")
-            else:
-                print("not sure...")
-            # move(pos)
+    execute_move()
+
+    # i = 0
+    # while i < 10:
+    #     i += 1
+    #     execute_move()
+
+    # i = 0
+    # j = 0
+    # while i < 30 and j < 100:
+    #     j += 1
+    #     rand_x = random.randint(0, width - 1)
+    #     rand_y = random.randint(0, height - 1)
+    #     cell = cell_positions[rand_y][rand_x]
+    #     im = screenGrab()
+
+    #     if getPixel(im, cell) == Cell.bomb:
+    #         print("bomb :(")
+    #         break
+
+    #     if getPixel(im, cell) == Cell.unopened:
+    #         i += 1
+    #         move(cell)
+    #         leftClick(1)
+    #         # print("unopened!")
+    #         # print("")
+    #     else:
+    #         # print("opened")
+    #         # print("")
+    #         time.sleep(.1)
 
 
 if __name__ == '__main__':
