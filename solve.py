@@ -200,8 +200,8 @@ def coords_to_row_col(coord):
     col = int((coord[0] - Offset.cell_x) / 16)
     return (row, col)
 
-# TODO: Clean this up and make it more efficient
-# Potentially use Union find to create disjoint sets
+# TODO: Clean up and make more efficient
+# Potentially use Union Find to create the disjoint sets
 def segregate(coords):
     count = 0
     groups = []
@@ -231,7 +231,12 @@ def segregate(coords):
 def tank_rule(im):
     border_coords = get_border_coords(im)
     border_coords_groups = segregate(border_coords)
-    return border_coords_groups
+    for border_coords_group in border_coords_groups:
+        tank_recurse(border_coords_group, 0)
+
+# TODO: Implement
+def tank_recurse(group, k):
+    pass
 
 def execute_move():
     move_made = False
@@ -269,6 +274,14 @@ def flag_all():
             coord = cell_coords[row][col]
             move(coord)
             right_click(1)
+
+def flag_group(i, groups):
+    group = groups[i]
+    for c in group:
+        move(c)
+        time.sleep(0.1)
+        right_click(1)
+        time.sleep(0.1)
 
 def screenshot_slow(save = False):
     box = (2 * (Offset.x + 1), 2 * (Offset.y + 1), 
