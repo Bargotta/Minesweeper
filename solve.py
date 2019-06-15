@@ -1,9 +1,11 @@
 from pynput.mouse import Button, Controller
 from numpy import *
-from PIL import ImageGrab, ImageOps
+from PIL import ImageGrab, ImageOps, Image
 import os
 import time
 import random
+import mss
+import mss.tools
 
 """
 All coordinates assume a screen resolution of 1440x900, and Chrome 
@@ -24,16 +26,16 @@ class Offset:
     top_pixel = 11
 
 class Cell:
-    unopened = (255, 255, 255, 255)
-    zero = (189, 189, 189, 255)
-    one = (0, 33, 245, 255)
-    two = (53, 120, 32, 255)
-    three = (235, 50, 35, 255)
-    four = (0, 10, 118, 255)
-    five = (113, 18, 11, 255)
-    six = (51, 121, 122, 255)
-    flagged = (0, 0, 0, 255)
-    bomb = (106, 106, 106, 255)
+    unopened = (255, 255, 255)
+    zero = (189, 189, 189)
+    one = (0, 33, 245)
+    two = (53, 120, 32)
+    three = (235, 50, 35)
+    four = (0, 10, 118)
+    five = (113, 18, 11)
+    six = (51, 121, 122)
+    flagged = (0, 0, 0)
+    bomb = (106, 106, 106)
 
 # -----------------------------------------------
 # Globals
@@ -58,13 +60,18 @@ for row in range(height):
 def coord_PIL(coord):
     return (2 * coord[0], 2 * coord[1])
 
-def screenshot():
-    box = (2 * (Offset.x + 1), 2 * (Offset.y + 1), 
-           2 * (Offset.x + 499), 2 * (Offset.y + 317))
-    im = ImageGrab.grab(box)
-    # path = os.getcwd() + '/snaps/snap__' + str(int(time.time())) + '.png'
-    # im.save(path, 'PNG')
-    return im
+def screenshot(save = False):
+    with mss.mss() as sct:
+        # The screen part to capture
+        screen = {"top": Offset.y + 1, "left": Offset.x + 1, "width": 499, "height": 317}
+        im = sct.grab(screen)
+
+        # Save image
+        if save:
+            path = os.getcwd() + '/snaps/snap__' + str(int(time.time())) + '.png'
+            mss.tools.to_png(im.rgb, im.size, output=path)
+        # Convert to PIL/Pillow Image
+        return Image.frombytes('RGB', im.size, im.bgra, 'raw', 'BGRX')
 
 def get_cell(im, coord):
     pixel = im.getpixel(coord_PIL(coord))
@@ -118,15 +125,17 @@ def numbered(cell):
 # -----------------------------------------------
 def leftClick(n):
     mouse.click(Button.left, n)
+    time.sleep(0.02)
 
 def rightClick(n):
     mouse.click(Button.right, n)
+    time.sleep(0.02)
 
 def move(coord):
     x = Offset.x + coord[0]
     y = Offset.y + coord[1]
     mouse.position = (x, y)
-    time.sleep(.02)
+    time.sleep(.003)
 
 def getCoords():
     x, y = mouse.position
@@ -185,9 +194,29 @@ def main():
     # start the game by clicking the middle cell
     move(cell_coords[int(height / 2)][int(width / 2)]) 
     leftClick(2)
+    time.sleep(0.1)
 
     while (execute_move()):
         pass
 
 if __name__ == '__main__':
     main()
+
+# -----------------------------------------------
+# Misc
+# -----------------------------------------------
+def flag_all():
+    for row in range(height):
+        for col in range(width):
+            coord = cell_coords[row][col]
+            move(coord)
+            rightClick(1)
+
+def screenshot_slow(save = False):
+    box = (2 * (Offset.x + 1), 2 * (Offset.y + 1), 
+           2 * (Offset.x + 499), 2 * (Offset.y + 317))
+    im = ImageGrab.grab(box)
+    if save:
+        path = os.getcwd() + '/snaps/snap__' + str(int(time.time())) + '.png'
+        im.save(path, 'PNG')
+    return im
