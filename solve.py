@@ -123,11 +123,11 @@ def numbered(cell):
 # -----------------------------------------------
 # Mouse Controls
 # -----------------------------------------------
-def leftClick(n):
+def left_click(n):
     mouse.click(Button.left, n)
     time.sleep(0.02)
 
-def rightClick(n):
+def right_click(n):
     mouse.click(Button.right, n)
     time.sleep(0.02)
 
@@ -151,8 +151,8 @@ def apply_rules(im, row, col):
     unopened_cells = []
     flagged_cells = []
 
-    neighbor_coords = [cell_coords[r][c] for r, c in neighbors(row, col)]
-    for n_coord in neighbor_coords:
+    n_coords = [cell_coords[r][c] for r, c in neighbors(row, col)]
+    for n_coord in n_coords:
         n_cell = get_cell(im, n_coord)
         if unopened(n_cell):
             unopened_cells.append(n_coord)
@@ -163,17 +163,75 @@ def apply_rules(im, row, col):
     if value(cell) == (len(unopened_cells) + len(flagged_cells)):
         for coord in unopened_cells:
             move(coord)
-            rightClick(1)
+            right_click(1)
         im = screenshot() if len(unopened_cells) > 0 else im
 
     # rule two
     if value(cell) == len(flagged_cells):
         for coord in unopened_cells:
             move(coord)
-            leftClick(1)
+            left_click(1)
         im = screenshot() if len(unopened_cells) > 0 else im
 
     return im
+
+# returns a set containing the coordinates of cells on the border 
+def get_border_coords(im):
+    border_coords = set()
+    for row in range(height):
+        for col in range(width):
+            if numbered(get_cell(im, cell_coords[row][col])):
+                n_coords = [cell_coords[r][c] for r, c in neighbors(row, col)]
+                for n_coord in n_coords:
+                    n_cell = get_cell(im, n_coord)
+                    if unopened(n_cell) and (n_coord not in border_coords):
+                        border_coords.add(n_coord)
+    return border_coords
+
+def isNeighbor(coord_1, coord_2):
+    c1 = coords_to_row_col(coord_1)
+    c2 = coords_to_row_col(coord_2)
+    diff_x = abs(c1[0] - c2[0])
+    diff_y = abs(c1[1] - c2[1])
+    return c1 != c2 and diff_x <= 1 and diff_y <= 1
+
+def coords_to_row_col(coord):
+    row = int((coord[1] - Offset.cell_y) / 16)
+    col = int((coord[0] - Offset.cell_x) / 16)
+    return (row, col)
+
+# TODO: Clean this up and make it more efficient
+# Potentially use Union find to create disjoint sets
+def segregate(coords):
+    count = 0
+    groups = []
+    seen = set()
+    while count < len(coords):
+        group = []
+        change = True
+        while change:
+            change = False
+            for c1 in coords:
+                if c1 not in seen:
+                    for c2 in group:
+                        if isNeighbor(c1, c2):
+                            group.append(c1)
+                            seen.add(c1)
+                            change = True
+                    if len(group) == 0:
+                        group.append(c1)
+                        seen.add(c1)
+                        change = True
+        group = list(dict.fromkeys(group))
+        count += len(group)
+        groups.append(group)
+
+    return groups
+
+def tank_rule(im):
+    border_coords = get_border_coords(im)
+    border_coords_groups = segregate(border_coords)
+    return border_coords_groups
 
 def execute_move():
     move_made = False
@@ -193,7 +251,7 @@ def execute_move():
 def main():
     # start the game by clicking the middle cell
     move(cell_coords[int(height / 2)][int(width / 2)]) 
-    leftClick(2)
+    left_click(2)
     time.sleep(0.1)
 
     while (execute_move()):
@@ -210,7 +268,7 @@ def flag_all():
         for col in range(width):
             coord = cell_coords[row][col]
             move(coord)
-            rightClick(1)
+            right_click(1)
 
 def screenshot_slow(save = False):
     box = (2 * (Offset.x + 1), 2 * (Offset.y + 1), 
