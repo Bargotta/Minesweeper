@@ -6,6 +6,7 @@ import time
 import random
 import mss
 import mss.tools
+import copy
 
 """
 All coordinates assume a screen resolution of 1440x900, and Chrome 
@@ -35,7 +36,7 @@ class Cell:
     five = (113, 18, 11)
     six = (51, 121, 122)
     flagged = (0, 0, 0)
-    bomb = (106, 106, 106)
+    mine = (106, 106, 106)
 
 # -----------------------------------------------
 # Globals
@@ -228,15 +229,104 @@ def segregate(coords):
 
     return groups
 
+def get_state_of_board(im):
+    board = [[Cell.unopened] * width for i in range(height)]
+    for row in range(height):
+        for col in range(width):
+            board[row][col] = get_cell(im, cell_coords[row][col])
+    return board
+
+def find_safe_cells(board_states, coords):
+    if len(board_states) == 0:
+        print("No board states...")
+        return []
+
+    safe_cells = []
+    for coord in coords:
+        row_col = coords_to_row_col(coord)
+        safe = True
+        for board in board_states:
+            cell = board[row_col[0]][row_col[1]]
+            if not unopened(cell):
+                safe = False
+                break
+        if safe:
+            safe_cells.append(coord)
+    return safe_cells
+
+def valid_around_flag(board, row, col):
+    if not flagged(board[row][col]):
+        print("Cell is not flagged...")
+        return False
+
+    n_row_cols = [(r, c) for r, c in neighbors(row, col)]
+    for n_row_col in n_row_cols:
+        n_row = n_row_col[0]
+        n_col = n_row_col[1]
+        n_cell = board[row][col]
+
+        if not numbered(n_cell):
+            continue
+
+        flag_count = 0
+        n_n_cells = [board[r][c] for r, c in neighbors(n_row, n_col)]
+        for n_n_cell in n_n_cells:
+            if flagged(n_n_cell):
+                flag_count += 1
+        if flag_count > value(board[row][col]):
+            return False
+
+    return True
+
+def valid_cell(board, row, col):
+    if numbered(board[row][col]):
+        flag_count = 0
+        n_cells = [board[r][c] for r, c in neighbors(row, col)]
+        for n_cell in n_cells:
+            if flagged(n_cell):
+                flag_count += 1
+        if flag_count != value(board[row][col]):
+            return False
+    return True
+
+def valid_board(board):
+    for row in range(height):
+        for col in range(width):
+            if not valid_cell(board, row, col):
+                return False
+    return True
+
+def tank_recurse(coords_group, k, board, board_states):
+    if k == len(coords_group):
+        if valid_board(board):
+            board_states.append(copy.deepcopy(board))
+        return
+
+    row_col = coords_to_row_col(coords_group[k])
+    # debug check
+    if not unopened(board[row_col[0]][row_col[1]]):
+        print("Something went wrong...")
+
+    board[row_col[0]][row_col[1]] = Cell.unopened
+    tank_recurse(coords_group, k + 1, board, board_states)
+
+    board[row_col[0]][row_col[1]] = Cell.flagged
+    # if valid_around_flag(board, row_col[0], row_col[1]):
+    tank_recurse(coords_group, k + 1, board, board_states)
+    board[row_col[0]][row_col[1]] = Cell.unopened
+
 def tank_rule(im):
     border_coords = get_border_coords(im)
     border_coords_groups = segregate(border_coords)
-    for border_coords_group in border_coords_groups:
-        tank_recurse(border_coords_group, 0)
+    board = get_state_of_board(im)
 
-# TODO: Implement
-def tank_recurse(group, k):
-    pass
+    for border_coords_group in border_coords_groups:
+        board_states = []
+        tank_recurse(border_coords_group, 0, board.copy(), board_states)
+        safe_cells = find_safe_cells(board_states, border_coords_group)
+        for coord in safe_cells:
+            move(coord)
+            left_click(1)
 
 def execute_move():
     move_made = False
@@ -261,6 +351,8 @@ def main():
 
     while (execute_move()):
         pass
+    # im = screenshot()
+    # tank_rule(im)
 
 if __name__ == '__main__':
     main()
