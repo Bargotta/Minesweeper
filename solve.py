@@ -94,8 +94,8 @@ def coord_PIL(coord):
     return (2 * coord[0], 2 * coord[1])
 
 def coords_to_row_col(coord):
-    row = int((coord[1] - Offset.cell_y) / 16)
-    col = int((coord[0] - Offset.cell_x) / 16)
+    row = int((coord[1] - Offset.cell_y) / Offset.cell_length)
+    col = int((coord[0] - Offset.cell_x) / Offset.cell_length)
     return (row, col)
 
 def screenshot(save = False):
