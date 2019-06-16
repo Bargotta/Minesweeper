@@ -12,16 +12,47 @@ import copy
 All coordinates assume a screen resolution of 1440x900, and Chrome 
 sized to 1440x730 with the Bookmarks Toolbar disabled.
 
-Play area  = Offset.x + 1, Offset.y + 1, 790, 448
+http://minesweeperonline.com
 """
-class Offset:
-    # coordinates to top left corner of play area
-    x = 291
-    y = 131
+class Game:
+    beginner = {
+        # height and width of board in cells
+        "height": 9,
+        "width": 9,
+        # height and width of screen in pixels
+        "screen_height": 205,
+        "screen_width": 163,
+        # coordinates to top left corner of play area
+        "offset": { "x": 301, "y": 131 }
+    }
+    intermediate = {
+        # height and width of board in cells
+        "height": 16,
+        "width": 16,
+        # height and width of screen in pixels
+        "screen_height": 317,
+        "screen_width": 275,
+        # coordinates to top left corner of play area
+        "offset": { "x": 301, "y": 131 }
+    }
+    expert = {
+        # height and width of board in cells
+        "height": 16,
+        "width": 30,
+        # height and width of screen in pixels
+        "screen_height": 317,
+        "screen_width": 499,
+        # coordinates to top left corner of play area
+        "offset": { "x": 291, "y": 131 }
+    }
 
-    # coordinates of the first cell
+class Offset:
+    # coordinates of the first cell in grid
     cell_x = 20
     cell_y = 63
+
+    # length of a cell side in pixels
+    cell_length = 16
 
     # number of pixels to get to the top border of a cell
     top_pixel = 11
@@ -41,17 +72,15 @@ class Cell:
 # -----------------------------------------------
 # Globals
 # -----------------------------------------------
+# Change this based on the difficulty of the game
+game = Game.intermediate
+
 mouse = Controller()
 
-# TODO: Dynamically find size of grid and positions of cells
-# size of grid for expert mode
-height = 16
-width = 30
-
-cell_coords = [[(0, 0)] * width for i in range(height)]
-for row in range(height):
-    for col in range(width):
-        cell_coords[row][col] = (Offset.cell_x + col * 16, Offset.cell_y + row * 16)
+cell_coords = [[(0, 0)] * game["width"] for i in range(game["height"])]
+for row in range(game["height"]):
+    for col in range(game["width"]):
+        cell_coords[row][col] = (Offset.cell_x + col * Offset.cell_length, Offset.cell_y + row * Offset.cell_length)
 
 # -----------------------------------------------
 # Helper Functions
@@ -64,7 +93,12 @@ def coord_PIL(coord):
 def screenshot(save = False):
     with mss.mss() as sct:
         # The screen part to capture
-        screen = {"top": Offset.y + 1, "left": Offset.x + 1, "width": 499, "height": 317}
+        screen = {
+            "top": game["offset"]["y"] + 1, 
+            "left": game["offset"]["x"] + 1, 
+            "width": game["screen_width"], 
+            "height": game["screen_height"]
+        }
         im = sct.grab(screen)
 
         # Save image
@@ -88,7 +122,7 @@ def get_cell(im, coord):
 
 def neighbors(row, col):
     def is_valid(h, w):
-        return 0 <= h < height and 0 <= w < width
+        return 0 <= h < game["height"] and 0 <= w < game["width"]
 
     for diff_r, diff_c in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
         neighbor_r, neighbor_c = row + diff_r, col + diff_c
@@ -133,15 +167,15 @@ def right_click(n):
     time.sleep(0.02)
 
 def move(coord):
-    x = Offset.x + coord[0]
-    y = Offset.y + coord[1]
+    x = game["offset"]["x"] + coord[0]
+    y = game["offset"]["y"] + coord[1]
     mouse.position = (x, y)
     time.sleep(.003)
 
 def getCoords():
     x, y = mouse.position
-    x = x - Offset.x
-    y = y - Offset.y
+    x = x - game["offset"]["x"]
+    y = y - game["offset"]["y"]
     print(x, y)
 
 # -----------------------------------------------
@@ -179,8 +213,8 @@ def apply_rules(im, row, col):
 # returns a set containing the coordinates of cells on the border 
 def get_border_coords(im):
     border_coords = set()
-    for row in range(height):
-        for col in range(width):
+    for row in range(game["height"]):
+        for col in range(game["width"]):
             if numbered(get_cell(im, cell_coords[row][col])):
                 n_coords = [cell_coords[r][c] for r, c in neighbors(row, col)]
                 for n_coord in n_coords:
@@ -230,9 +264,9 @@ def segregate(coords):
     return groups
 
 def get_state_of_board(im):
-    board = [[Cell.unopened] * width for i in range(height)]
-    for row in range(height):
-        for col in range(width):
+    board = [[Cell.unopened] * game["width"] for i in range(game["height"])]
+    for row in range(game["height"]):
+        for col in range(game["width"]):
             board[row][col] = get_cell(im, cell_coords[row][col])
     return board
 
@@ -290,8 +324,8 @@ def valid_cell(board, row, col):
     return True
 
 def valid_board(board):
-    for row in range(height):
-        for col in range(width):
+    for row in range(game["height"]):
+        for col in range(game["width"]):
             if not valid_cell(board, row, col):
                 return False
     return True
@@ -332,8 +366,8 @@ def execute_move():
     move_made = False
     im = screenshot()
 
-    for row in range(height):
-        for col in range(width):
+    for row in range(game["height"]):
+        for col in range(game["width"]):
             cell = get_cell(im, cell_coords[row][col])
             if numbered(cell):
                 prev_im = im
@@ -345,7 +379,7 @@ def execute_move():
 
 def main():
     # start the game by clicking the middle cell
-    move(cell_coords[int(height / 2)][int(width / 2)]) 
+    move(cell_coords[int(game["height"] / 2)][int(game["width"] / 2)]) 
     left_click(2)
     time.sleep(0.1)
 
@@ -361,8 +395,8 @@ if __name__ == '__main__':
 # Misc
 # -----------------------------------------------
 def flag_all():
-    for row in range(height):
-        for col in range(width):
+    for row in range(game["height"]):
+        for col in range(game["width"]):
             coord = cell_coords[row][col]
             move(coord)
             right_click(1)
@@ -376,8 +410,8 @@ def flag_group(i, groups):
         time.sleep(0.1)
 
 def screenshot_slow(save = False):
-    box = (2 * (Offset.x + 1), 2 * (Offset.y + 1), 
-           2 * (Offset.x + 499), 2 * (Offset.y + 317))
+    box = (2 * (game["offset"]["x"] + 1), 2 * (game["offset"]["y"] + 1), 
+           2 * (game["offset"]["x"] + 499), 2 * (game["offset"]["y"] + 317))
     im = ImageGrab.grab(box)
     if save:
         path = os.getcwd() + '/snaps/snap__' + str(int(time.time())) + '.png'
