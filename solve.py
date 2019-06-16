@@ -452,3 +452,4 @@ def valid_board(board):
             if not valid_cell(board, row, col):
                 return False
     return True
+    
