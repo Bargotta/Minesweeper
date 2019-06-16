@@ -311,6 +311,31 @@ def getCoords():
 # -----------------------------------------------
 # Main
 # -----------------------------------------------
+def educated_guess(board_states, coords):
+    if len(board_states) == 0:
+        print("No board states...")
+        return False
+
+    if len(coords) == 0:
+        print("No coords given...")
+        return False
+
+    counts = []
+    for coord in coords:
+        count = 0
+        row, col = coords_to_row_col(coord)
+        for board in board_states:
+            cell = board[row][col]
+            # invarient check
+            if not (unopened(cell) or flagged(cell)):
+                print("Something went wrong...")
+            if flagged(cell):
+                count += 1
+        counts.append((count, coord))
+
+    counts = sorted(counts, key = lambda elem: elem[0])
+    return counts[0][1]
+
 def tank_recurse(coords_group, k, board, board_states):
     if k == len(coords_group):
         if valid_board_group(board, coords_group):
@@ -336,28 +361,48 @@ def tank_rule(im):
     border_coords = get_border_coords(im)
     border_coords_groups = sort_by_elem_length(segregate(border_coords))
     board = get_board(im)
-    move_made = False
+    give_up = False
+    all_board_states = []
 
+    move_made = False
     for border_coords_group in border_coords_groups:
         border_len = len(border_coords_group)
         print("length of border: " + str(border_len))
         # hopefully enough has been done to go back to rule 1 and rule 2...
         if move_made and border_len > 15:
             print("Going back to rule 1 and rule 2...\n")
+            give_up = True
             break
 
-        # break otherwise it will take too long
+        # continuing will take too long
         if border_len > 27:
             print("Giving up...")
+            give_up = True
             break
 
         board_states = []
         tank_recurse(border_coords_group, 0, board, board_states)
+        all_board_states.append(board_states)
         safe_cells = find_safe_cells(board_states, border_coords_group)
         for coord in safe_cells:
             move(coord)
             left_click(1)
             move_made = True
+
+    # All else has failed... make an educated guess
+    if not move_made and not give_up:
+        guess_made = False
+        for i in range(len(border_coords_groups)):
+            if guess_made:
+                print("Going back to rule 1 and rule 2...\n")
+                break
+
+            print("time for an educated guess...")
+            coord = educated_guess(all_board_states[i], border_coords_groups[i])
+            if coord:
+                move(coord)
+                left_click(1)
+                guess_made = True
 
     return im != screenshot()
 
