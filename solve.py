@@ -9,10 +9,13 @@ import mss.tools
 import copy
 
 """
-All coordinates assume a screen resolution of 1440x900, and Chrome 
-sized to 1440x730 with the Bookmarks Toolbar disabled.
+Minesweeper bot for http://minesweeperonline.com
 
-http://minesweeperonline.com
+Before running, ensure game["offset"] is set to the coordinates for 
+the pixel in the top left corner of the play area.
+
+(Current coordinates assume a screen resolution of 1440x900, and Chrome 
+sized to 1440x730 with the Bookmarks Toolbar disabled.)
 """
 class Game:
     beginner = {
@@ -452,4 +455,3 @@ def valid_board(board):
             if not valid_cell(board, row, col):
                 return False
     return True
-    
