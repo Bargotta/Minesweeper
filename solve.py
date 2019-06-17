@@ -454,7 +454,7 @@ def main():
     # start the game by clicking the middle cell
     move(cell_coords[int(game["height"] / 2)][int(game["width"] / 2)]) 
     left_click(2)
-    time.sleep(0.1)
+    time.sleep(0.03)
 
     while (True):
         # try rules 1 and 2
