@@ -7,7 +7,7 @@ This bot applies the rules and tactics for solving Minesweeper lined out in this
 ![](gifs/beginner.gif)
 
 ## Solving an Intermediate Board
-![](gifs/beginner.gif)
+![](gifs/intermediate.gif)
 
 ## Solving an Expert Board
-![](gifs/beginner.gif)
+![](gifs/expert.gif)
