@@ -10,4 +10,5 @@ This bot applies the rules and tactics for solving Minesweeper lined out in this
 ![](gifs/intermediate.gif)
 
 ## Solving an Expert Board
+\* This is 3x slowed down (I believe due to being a large file)
 ![](gifs/expert.gif)
